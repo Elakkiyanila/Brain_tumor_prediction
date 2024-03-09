@@ -1,0 +1,83 @@
+import streamlit as st
+from PIL import Image
+from io import BytesIO
+import base64
+import tensorflow as tf
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from keras.models import load_model
+
+# Function to encode image to base64
+def image_to_base64(image):
+    image_pil = Image.fromarray(np.uint8(image))
+    image_buffer = BytesIO()
+    image_pil.save(image_buffer, format="JPEG")
+    return base64.b64encode(image_buffer.getvalue()).decode()
+
+
+# Set Streamlit page configuration
+st.set_page_config(page_title='Brain Tumor Prediction', page_icon='🧠', layout='wide')
+
+# Title
+st.title('Brain Tumor Prediction App')
+
+# Navigation select box
+with st.sidebar:
+    selected = st.selectbox("Select a page", ["Home Page", "Brain Tumor Prediction"])
+
+# Home Page
+if selected == "Home Page":
+    # Upload and display image for the home page
+    st.image("brain_tumor.jpg", use_column_width=True)
+
+    # Project Overview and Technology Used
+    col1, col2 = st.columns(2)
+
+    # Project Overview
+    with col1:
+        st.header('Overview Of The Project')
+        st.markdown('##### ***This Streamlit app allows users to predict whether a given brain MRI image contains a tumor or not. Upload an image, and the model will provide a prediction based on the trained neural network. The model was trained using a Convolutional Neural Network (CNN) architecture.***')
+
+    # Technology Used
+    with col2:
+        st.header('Technology Used')
+        st.markdown('##### ***- Python***')
+        st.markdown('##### ***- Pandas***')
+        st.markdown('##### ***- numpy***')
+        st.markdown('##### ***- TensorFlow (Keras)***')
+        st.markdown('##### ***- Streamlit (for backend)***')
+        st.markdown('##### ***- Matplotlib (for data visualization)***')
+
+# Brain Tumor Prediction Page
+elif selected == "Brain Tumor Prediction":
+    st.header("Upload a brain MRI image to predict whether it contains a brain tumor or not.")
+
+    # Load the trained model
+    model_path = 'C:\\Users\\91994\\Desktop\\brain_tumor\\brain_tumor_model.h5'
+    model = load_model(model_path)
+
+    # File uploader for image selection
+    uploaded_file = st.file_uploader("Upload a brain MRI image", type=["jpg", "jpeg"])
+
+    # Display the selected image
+    if uploaded_file is not None:
+        # Instructions for user
+        image = load_img(uploaded_file, target_size=(224, 224))
+        image_width = 300  # Adjust the width as needed
+        image_html = f'<img src="data:image/jpeg;base64,{image_to_base64(image)}" width="{image_width}px">'
+        st.markdown(image_html, unsafe_allow_html=True)
+
+        # Preprocess the image
+        img_array = img_to_array(image)
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = img_array / 255.0  # Normalize pixel values to be between 0 and 1
+
+        # Make prediction
+        prediction = model.predict(img_array)
+
+        # Display prediction result
+        st.header(f"Prediction Result:")
+        if prediction[0][0] <= 0.5:
+            st.header("The Person has no Brain Tumor")
+        else:
+            st.header("The Person has Brain Tumor")
